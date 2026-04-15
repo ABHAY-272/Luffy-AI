@@ -1,6 +1,5 @@
-import { Plus, MessageSquare, Trash2, Menu, X, Sparkles, Settings, ChevronRight } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Menu, X, Sparkles, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import {
   useListGeminiConversations,
   useDeleteGeminiConversation,
@@ -9,6 +8,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { SettingsModal } from "./settings-modal";
 
 interface SidebarProps {
   currentId: number | null;
@@ -30,6 +30,7 @@ function LuffyLogo() {
 
 export function ChatSidebar({ currentId }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
@@ -121,7 +122,11 @@ export function ChatSidebar({ currentId }: SidebarProps) {
       {/* Bottom section */}
       <div className="border-t border-sidebar-border px-3 py-3 space-y-0.5">
         {/* Settings row */}
-        <button className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors">
+        <button
+          onClick={() => setSettingsOpen(true)}
+          data-testid="button-settings"
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
+        >
           <Settings className="w-4 h-4 shrink-0 opacity-70" />
           <span className="text-[13px]">Settings</span>
         </button>
@@ -141,6 +146,8 @@ export function ChatSidebar({ currentId }: SidebarProps) {
 
   return (
     <>
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
       {/* Mobile toggle */}
       <div className="md:hidden fixed top-3 left-3 z-50">
         <button
