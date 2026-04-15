@@ -2,6 +2,7 @@ import { Mic, MicOff, Send, Volume2, VolumeX, Loader2, Paperclip } from "lucide-
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { usePdfUpload } from "@/hooks/use-pdf-upload";
 
 interface InputAreaProps {
   onSend: (message: string) => void;
@@ -25,6 +26,11 @@ export function InputArea({
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const { inputRef: pdfInputRef, openPicker, handleFile, isParsing } = usePdfUpload((text) => {
+    setInput(text);
+    setTimeout(() => textareaRef.current?.focus(), 100);
+  });
+
   const handleSend = () => {
     if (!input.trim() || isStreaming) return;
     onSend(input);
@@ -35,7 +41,8 @@ export function InputArea({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    const enterToSend = localStorage.getItem("luffy-enter-send") !== "false";
+    if (e.key === "Enter" && !e.shiftKey && enterToSend) {
       e.preventDefault();
       handleSend();
     }
@@ -47,6 +54,7 @@ export function InputArea({
     } else {
       onStartListening((text) => {
         setInput((prev) => (prev ? prev + " " + text : text));
+        setTimeout(() => textareaRef.current?.focus(), 100);
       });
     }
   };
@@ -59,8 +67,20 @@ export function InputArea({
     }
   }, [input]);
 
+  const busy = isStreaming || isParsing;
+
   return (
     <div className="max-w-3xl mx-auto w-full">
+      {/* Hidden PDF file input */}
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept=".pdf,application/pdf"
+        className="hidden"
+        onChange={handleFile}
+        data-testid="input-pdf-file"
+      />
+
       {/* Glassmorphic input container */}
       <div className="relative bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-lg shadow-black/20 focus-within:border-primary/40 transition-colors duration-200">
         {/* Text area */}
@@ -69,8 +89,8 @@ export function InputArea({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Luffy AI anything..."
-          disabled={isStreaming}
+          placeholder={isParsing ? "Extracting PDF text…" : "Ask Luffy AI anything..."}
+          disabled={busy}
           data-testid="input-message"
           className="min-h-[52px] max-h-[160px] bg-transparent border-none focus-visible:ring-0 resize-none px-4 pt-3.5 pb-12 text-sm text-foreground placeholder:text-muted-foreground leading-relaxed"
           rows={1}
@@ -82,32 +102,44 @@ export function InputArea({
           <div className="flex items-center gap-1">
             {/* PDF Upload */}
             <button
+              onClick={openPicker}
+              disabled={busy}
               title="Upload PDF"
               data-testid="button-upload-pdf"
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                isParsing
+                  ? "text-primary animate-pulse"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-40"
+              )}
             >
-              <Paperclip className="w-4 h-4" />
+              {isParsing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Paperclip className="w-4 h-4" />
+              )}
             </button>
 
-            {/* Voice Input */}
+            {/* Voice Input / Mic */}
             <button
               onClick={handleVoiceInput}
+              disabled={isStreaming}
               title={isListening ? "Stop listening" : "Voice input"}
               data-testid="button-voice-input"
               className={cn(
                 "p-1.5 rounded-lg transition-colors",
                 isListening
                   ? "text-red-400 bg-red-500/10 animate-pulse"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-40"
               )}
             >
               {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
 
-            {/* Voice Output */}
+            {/* Voice Output toggle */}
             <button
               onClick={onToggleVoice}
-              title={voiceEnabled ? "Mute voice" : "Enable voice"}
+              title={voiceEnabled ? "Mute voice output" : "Enable voice output"}
               data-testid="button-toggle-voice"
               className={cn(
                 "p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1",
@@ -123,11 +155,11 @@ export function InputArea({
           {/* Send button */}
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isStreaming}
+            disabled={!input.trim() || busy}
             data-testid="button-send"
             className={cn(
               "flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200",
-              input.trim() && !isStreaming
+              input.trim() && !busy
                 ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm shadow-primary/30"
                 : "bg-muted text-muted-foreground cursor-not-allowed"
             )}

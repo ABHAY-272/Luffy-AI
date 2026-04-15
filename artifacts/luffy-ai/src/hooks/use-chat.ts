@@ -93,35 +93,70 @@ export function useChat({ conversationId }: UseChatOptions) {
     });
   };
 
-  const startListening = (onResult: (text: string) => void) => {
-    if (!recognitionRef.current) {
-      toast({ title: "Speech recognition not supported", variant: "destructive" });
+  const startListening = async (onResult: (text: string) => void) => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      toast({
+        title: "Microphone not supported",
+        description: "Use Chrome or Edge for voice input.",
+        variant: "destructive",
+      });
       return;
     }
 
+    // Request mic permission explicitly first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      toast({
+        title: "Microphone access denied",
+        description: "Allow microphone access in your browser settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Re-create recognition each time to avoid stale state
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = localStorage.getItem("luffy-lang") || "en-IN";
+    recognitionRef.current = recognition;
+
     setIsListening(true);
-    
-    recognitionRef.current.onresult = (event: any) => {
+    toast({ title: "🎙 Listening… speak now" });
+
+    recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       onResult(transcript);
     };
 
-    recognitionRef.current.onerror = (event: any) => {
+    recognition.onerror = (event: any) => {
       console.error("Speech recognition error", event.error);
       setIsListening(false);
-      toast({ title: `Microphone error: ${event.error}`, variant: "destructive" });
+      const msgs: Record<string, string> = {
+        "not-allowed": "Microphone access denied. Check browser permissions.",
+        "no-speech": "No speech detected. Try speaking closer to the mic.",
+        network: "Network error during voice recognition.",
+      };
+      toast({
+        title: msgs[event.error] || `Voice error: ${event.error}`,
+        variant: "destructive",
+      });
     };
 
-    recognitionRef.current.onend = () => {
+    recognition.onend = () => {
       setIsListening(false);
     };
 
-    recognitionRef.current.start();
+    recognition.start();
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
       setIsListening(false);
     }
   };
