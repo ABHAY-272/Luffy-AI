@@ -1,5 +1,5 @@
 import { MarkdownRenderer } from "./markdown";
-import { Bot, User } from "lucide-react";
+import { Sparkles, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MessageProps {
@@ -14,33 +14,35 @@ export function Message({ role, content, isStreaming }: MessageProps) {
   return (
     <div
       className={cn(
-        "flex w-full p-4 md:p-6 gap-4 rounded-xl transition-all duration-300 group relative overflow-hidden",
-        isUser
-          ? "bg-secondary/30 ml-auto max-w-3xl border border-border/50"
-          : "bg-background border border-primary/20 glow-cyan max-w-4xl"
+        "group flex gap-4 w-full msg-animate",
+        isUser ? "flex-row-reverse" : "flex-row"
       )}
     >
-      {/* Decorative scanline for assistant */}
-      {!isUser && (
-        <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none" />
-      )}
-
+      {/* Avatar */}
       <div
         className={cn(
-          "w-10 h-10 shrink-0 rounded-full flex items-center justify-center border z-10",
+          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5",
           isUser
-            ? "bg-secondary text-secondary-foreground border-border"
-            : "bg-primary/10 text-primary border-primary/50 shadow-[0_0_10px_rgba(0,255,255,0.4)]"
+            ? "bg-secondary border border-border text-muted-foreground"
+            : "bg-gradient-to-br from-cyan-400 to-blue-600 text-white shadow-md shadow-cyan-500/20"
         )}
       >
-        {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+        {isUser ? <User className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
       </div>
 
-      <div className="flex-1 min-w-0 z-10 pt-1">
+      {/* Bubble */}
+      <div
+        className={cn(
+          "rounded-2xl px-4 py-3 text-sm leading-relaxed max-w-[75%]",
+          isUser
+            ? "bg-primary text-primary-foreground rounded-tr-sm ml-auto"
+            : "bg-card border border-border text-foreground rounded-tl-sm"
+        )}
+      >
         {isUser ? (
-          <div className="text-foreground whitespace-pre-wrap">{content}</div>
+          <p className="whitespace-pre-wrap">{content}</p>
         ) : (
-          <div className="relative">
+          <div>
             <MarkdownRenderer content={content} />
             {isStreaming && <span className="typewriter-cursor" />}
           </div>

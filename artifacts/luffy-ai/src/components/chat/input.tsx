@@ -1,5 +1,4 @@
-import { Mic, MicOff, Send, Volume2, VolumeX, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Mic, MicOff, Send, Volume2, VolumeX, Loader2, Paperclip } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -21,7 +20,7 @@ export function InputArea({
   onToggleVoice,
   isListening,
   onStartListening,
-  onStopListening
+  onStopListening,
 }: InputAreaProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -30,6 +29,9 @@ export function InputArea({
     if (!input.trim() || isStreaming) return;
     onSend(input);
     setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -44,79 +46,104 @@ export function InputArea({
       onStopListening();
     } else {
       onStartListening((text) => {
-        setInput(prev => prev ? prev + " " + text : text);
+        setInput((prev) => (prev ? prev + " " + text : text));
       });
     }
   };
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 160) + "px";
     }
   }, [input]);
 
   return (
-    <div className="relative max-w-4xl mx-auto w-full">
-      <div className="absolute -top-10 left-0 right-0 flex justify-end px-4 gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleVoice}
-          className={cn(
-            "rounded-full transition-all duration-300",
-            voiceEnabled ? "text-primary glow-text" : "text-muted-foreground"
-          )}
-          title={voiceEnabled ? "Mute Voice Output" : "Enable Voice Output"}
-        >
-          {voiceEnabled ? <Volume2 className="w-4 h-4 mr-2" /> : <VolumeX className="w-4 h-4 mr-2" />}
-          {voiceEnabled ? "Voice ON" : "Voice OFF"}
-        </Button>
-      </div>
+    <div className="max-w-3xl mx-auto w-full">
+      {/* Glassmorphic input container */}
+      <div className="relative bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-lg shadow-black/20 focus-within:border-primary/40 transition-colors duration-200">
+        {/* Text area */}
+        <Textarea
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask Luffy AI anything..."
+          disabled={isStreaming}
+          data-testid="input-message"
+          className="min-h-[52px] max-h-[160px] bg-transparent border-none focus-visible:ring-0 resize-none px-4 pt-3.5 pb-12 text-sm text-foreground placeholder:text-muted-foreground leading-relaxed"
+          rows={1}
+        />
 
-      <div className="relative group bg-background/50 backdrop-blur-xl rounded-2xl border border-primary/30 p-2 shadow-[0_0_20px_rgba(0,255,255,0.05)] focus-within:shadow-[0_0_30px_rgba(0,255,255,0.15)] transition-all duration-500">
-        {/* Glow border effect */}
-        <div className="absolute inset-0 rounded-2xl border border-primary/50 opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none glow-cyan" />
-        
-        <div className="flex items-end gap-2 relative z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleVoiceInput}
-            className={cn(
-              "rounded-full shrink-0 transition-colors",
-              isListening ? "text-destructive animate-pulse bg-destructive/10" : "text-primary hover:bg-primary/10"
-            )}
-          >
-            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-          </Button>
+        {/* Bottom toolbar */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 pb-2.5">
+          {/* Left tools */}
+          <div className="flex items-center gap-1">
+            {/* PDF Upload */}
+            <button
+              title="Upload PDF"
+              data-testid="button-upload-pdf"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
 
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="System awaiting input..."
-            className="min-h-[44px] max-h-[200px] bg-transparent border-none focus-visible:ring-0 resize-none p-2 text-foreground placeholder:text-muted-foreground font-mono text-sm"
-            rows={1}
-            disabled={isStreaming}
-          />
+            {/* Voice Input */}
+            <button
+              onClick={handleVoiceInput}
+              title={isListening ? "Stop listening" : "Voice input"}
+              data-testid="button-voice-input"
+              className={cn(
+                "p-1.5 rounded-lg transition-colors",
+                isListening
+                  ? "text-red-400 bg-red-500/10 animate-pulse"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              )}
+            >
+              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
 
-          <Button
+            {/* Voice Output */}
+            <button
+              onClick={onToggleVoice}
+              title={voiceEnabled ? "Mute voice" : "Enable voice"}
+              data-testid="button-toggle-voice"
+              className={cn(
+                "p-1.5 rounded-lg transition-colors text-xs flex items-center gap-1",
+                voiceEnabled
+                  ? "text-primary hover:bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+              )}
+            >
+              {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {/* Send button */}
+          <button
             onClick={handleSend}
             disabled={!input.trim() || isStreaming}
-            size="icon"
-            className="rounded-full shrink-0 bg-primary/20 text-primary border border-primary/50 hover:bg-primary hover:text-primary-foreground hover:shadow-[0_0_15px_rgba(0,255,255,0.8)] transition-all duration-300"
+            data-testid="button-send"
+            className={cn(
+              "flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200",
+              input.trim() && !isStreaming
+                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm shadow-primary/30"
+                : "bg-muted text-muted-foreground cursor-not-allowed"
+            )}
           >
-            {isStreaming ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-          </Button>
+            {isStreaming ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
         </div>
       </div>
-      
-      <div className="text-center mt-2 text-xs text-primary/60 font-mono tracking-widest uppercase opacity-70">
-        LUFFY OS VER 1.0 // B.C.A CO-PILOT
-      </div>
+
+      <p className="text-center text-[11px] text-muted-foreground mt-2">
+        Luffy AI can make mistakes. Verify important information.
+      </p>
     </div>
   );
 }
