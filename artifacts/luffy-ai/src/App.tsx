@@ -4,7 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
-import { useEffect } from "react";
+import AuthPage from "@/pages/auth";
+import { useEffect, useState } from "react";
+import { getSession, type AuthUser } from "@/hooks/use-auth";
 
 const queryClient = new QueryClient();
 
@@ -19,9 +21,26 @@ function Router() {
 }
 
 function App() {
+  const [user, setUser] = useState<AuthUser | null>(getSession);
+
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
+
+  const handleAuth = () => {
+    setUser(getSession());
+  };
+
+  if (!user) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthPage onSuccess={handleAuth} />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

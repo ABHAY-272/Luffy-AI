@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, Trash2, Menu, X, Sparkles, Settings } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Menu, X, Sparkles, Settings, LogOut, UserCircle2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   useListGeminiConversations,
@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { SettingsModal } from "./settings-modal";
+import { getSession } from "@/hooks/use-auth";
 
 interface SidebarProps {
   currentId: number | null;
@@ -118,7 +119,7 @@ export function ChatSidebar({ currentId }: SidebarProps) {
       </div>
 
       {/* Bottom section */}
-      <div className="border-t border-sidebar-border px-3 py-3 space-y-0.5">
+      <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
         {/* Settings row */}
         <button
           onClick={() => setSettingsOpen(true)}
@@ -129,15 +130,41 @@ export function ChatSidebar({ currentId }: SidebarProps) {
           <span className="text-[13px]">Settings</span>
         </button>
 
-        {/* Credits */}
-        <div className="px-2.5 py-2.5 mt-1 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-500/15">
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Crafted with precision by
-          </p>
-          <p className="text-[12px] font-semibold text-cyan-400 mt-0.5">
-            Abhay Sir & Dipanshu Sir
-          </p>
-        </div>
+        {/* User profile + logout */}
+        {(() => {
+          const session = getSession();
+          if (!session) return null;
+          const initials = session.name
+            .split(" ")
+            .map((w) => w[0])
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+          const handleLogout = () => {
+            localStorage.removeItem("luffy-session");
+            window.location.reload();
+          };
+          return (
+            <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-sidebar-accent group transition-colors">
+              {/* Avatar */}
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/60 to-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
+                {initials || <UserCircle2 className="w-4 h-4" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-medium text-foreground truncate">{session.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{session.email}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                data-testid="button-logout"
+                className="p-1 rounded text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
