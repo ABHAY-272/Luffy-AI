@@ -1,7 +1,11 @@
-import app from "./app";
-import { logger } from "./lib/logger";
+// TS2835 Fix: ESM mode mein explicit .js extensions zaroori hain
+import app from "./app.js"; 
+import { logger } from "./lib/logger.js";
 
-// CRITICAL FIX: Iske bina Vercel ko 'app' nahi milega
+// TS2591 Fix: Node types recognize karne ke liye global declaration
+declare const process: any;
+
+// Exporting the app instance for Vercel
 export { app }; 
 
 const rawPort = process.env["PORT"];
@@ -18,8 +22,8 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-// Server start logic (Ye local testing ke liye hai)
-app.listen(port, (err) => {
+// TS7006 Fix: 'err' ko explicit type dena zaroori hai
+app.listen(port, (err: any) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
