@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, Trash2, Menu, X, Sparkles, Settings, LogOut, UserCircle2 } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Menu, X, Sparkles, Settings, LogOut, UserCircle2, Code2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   useListGeminiConversations,
@@ -63,7 +63,7 @@ export function ChatSidebar({ currentId }: SidebarProps) {
       </div>
 
       {/* New Chat */}
-      <div className="px-3 pt-3 pb-2">
+      <div className="px-3 pt-3 pb-1 space-y-1">
         <button
           onClick={() => { setLocation("/"); setIsOpen(false); }}
           data-testid="button-new-chat"
@@ -72,6 +72,20 @@ export function ChatSidebar({ currentId }: SidebarProps) {
           <Plus className="w-4 h-4 shrink-0" />
           New Chat
         </button>
+
+        <Link href="/playground">
+          <a
+            onClick={() => setIsOpen(false)}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors group"
+            data-testid="link-playground"
+          >
+            <Code2 className="w-4 h-4 shrink-0 text-primary/70 group-hover:text-primary transition-colors" />
+            <span>Code Playground</span>
+            <span className="ml-auto text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+              LIVE
+            </span>
+          </a>
+        </Link>
       </div>
 
       {/* Recent Chats */}
