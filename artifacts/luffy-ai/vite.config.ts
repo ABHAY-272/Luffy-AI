@@ -4,24 +4,24 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-// FIX: Agar PORT nahi hai toh default 5173 use karein (Vercel ke liye safe)
+// Environment-based setup
 const port = process.env.PORT ? Number(process.env.PORT) : 5173;
-
-// FIX: Agar BASE_PATH nahi hai toh default '/' use karein
-const basePath = process.env.BASE_PATH || "/";
+const isProduction = process.env.NODE_ENV === "production";
 
 export default defineConfig({
-  base: basePath,
+  // BASE_PATH specify karna zaroori hai agar artifacts folder se serve ho raha ho
+  base: process.env.BASE_PATH || "/",
+
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
+    // Replit specific plugins only in dev mode
+    ...(!isProduction && process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
+              root: path.resolve(import.meta.dirname, "..", ".."), // Root of workspace
             }),
           ),
           await import("@replit/vite-plugin-dev-banner").then((m) =>
@@ -30,31 +30,50 @@ export default defineConfig({
         ]
       : []),
   ],
+
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
+      // Attached assets usually live at the root of the workspace
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
     dedupe: ["react", "react-dom"],
   },
+
   root: path.resolve(import.meta.dirname),
+
   build: {
-    // Vercel standard dist use karta hai
-    outDir: path.resolve(import.meta.dirname, "dist"), 
+    outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
+    // Monorepo mein chunks ko optimize karna better rehta hai
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "framer-motion"],
+        },
+      },
+    },
   },
+
   server: {
     port,
     host: "0.0.0.0",
-    allowedHosts: true,
+    // LOCAL PROXY: Isse dev mein 404 nahi aayega
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000", // Aapka api-server port
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     fs: {
-      strict: true,
-      deny: ["**/.*"],
+      strict: false, // Monorepo mein workspace files access karne ke liye false zaroori hai
+      allow: [path.resolve(import.meta.dirname, "..", "..")], 
     },
   },
+
   preview: {
     port,
     host: "0.0.0.0",
-    allowedHosts: true,
   },
 });

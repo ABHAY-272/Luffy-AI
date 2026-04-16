@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/artifacts/api-server/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/artifacts/luffy-ai/$1"
+    }
+  ]
+}
