@@ -90,17 +90,16 @@ export function ChatSidebar({ currentId }: SidebarProps) {
         ) : (
           <div className="space-y-0.5">
             {conversations?.map((conv) => (
-              <Link key={conv.id} href={`/c/${conv.id}`}>
-                <a
-                  data-testid={`link-conv-${conv.id}`}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "group flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-colors cursor-pointer",
-                    currentId === conv.id
-                      ? "bg-accent text-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
-                  )}
-                >
+              <Link key={conv.id} href={`/c/${conv.id}`}
+                data-testid={`link-conv-${conv.id}`}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "group flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-colors cursor-pointer",
+                  currentId === conv.id
+                    ? "bg-accent text-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
+                )}
+              >
                   <div className="flex items-center gap-2 overflow-hidden min-w-0">
                     <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-60" />
                     <span className="truncate text-[13px]">{conv.title || "Untitled Chat"}</span>
@@ -112,7 +111,6 @@ export function ChatSidebar({ currentId }: SidebarProps) {
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
-                </a>
               </Link>
             ))}
           </div>

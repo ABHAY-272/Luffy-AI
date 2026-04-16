@@ -1,6 +1,10 @@
-import { X, Volume2, VolumeX, Mic, Sparkles, Info, Palette, MessageSquare, Keyboard } from "lucide-react";
+import {
+  X, Volume2, Mic, Sparkles, Info, Palette,
+  MessageSquare, Keyboard, Check, AlignJustify, AlignLeft,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { THEMES, applyTheme, getSavedTheme, type ThemeId } from "@/lib/theme";
 
 interface SettingsModalProps {
   open: boolean;
@@ -10,63 +14,65 @@ interface SettingsModalProps {
 type Tab = "general" | "voice" | "appearance" | "about";
 
 const TABS: { id: Tab; label: string; icon: typeof Info }[] = [
-  { id: "general", label: "General", icon: MessageSquare },
-  { id: "voice", label: "Voice", icon: Volume2 },
+  { id: "general",    label: "General",    icon: MessageSquare },
+  { id: "voice",      label: "Voice",      icon: Volume2 },
   { id: "appearance", label: "Appearance", icon: Palette },
-  { id: "about", label: "About", icon: Info },
+  { id: "about",      label: "About",      icon: Info },
 ];
 
 export function SettingsModal({ open, onClose }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("general");
+  const [activeTab, setActiveTab]     = useState<Tab>("general");
   const [voiceEnabled, setVoiceEnabled] = useState(() =>
     localStorage.getItem("luffy-voice") !== "false"
   );
-  const [voiceSpeed, setVoiceSpeed] = useState(() =>
+  const [voiceSpeed, setVoiceSpeed]   = useState(() =>
     parseFloat(localStorage.getItem("luffy-voice-speed") || "1.05")
   );
-  const [voicePitch, setVoicePitch] = useState(() =>
+  const [voicePitch, setVoicePitch]   = useState(() =>
     parseFloat(localStorage.getItem("luffy-voice-pitch") || "0.9")
   );
   const [enterToSend, setEnterToSend] = useState(() =>
     localStorage.getItem("luffy-enter-send") !== "false"
   );
-  const [language, setLanguage] = useState(() =>
+  const [language, setLanguage]       = useState(() =>
     localStorage.getItem("luffy-lang") || "en-IN"
   );
+  const [activeTheme, setActiveTheme] = useState<ThemeId>(getSavedTheme);
+  const [density, setDensity]         = useState<"comfortable" | "compact">(() =>
+    (localStorage.getItem("luffy-density") as "comfortable" | "compact") || "comfortable"
+  );
+
+  useEffect(() => { localStorage.setItem("luffy-voice",      String(voiceEnabled)); }, [voiceEnabled]);
+  useEffect(() => { localStorage.setItem("luffy-voice-speed", String(voiceSpeed));  }, [voiceSpeed]);
+  useEffect(() => { localStorage.setItem("luffy-voice-pitch", String(voicePitch));  }, [voicePitch]);
+  useEffect(() => { localStorage.setItem("luffy-enter-send",  String(enterToSend)); }, [enterToSend]);
+  useEffect(() => { localStorage.setItem("luffy-lang",        language);            }, [language]);
 
   useEffect(() => {
-    localStorage.setItem("luffy-voice", String(voiceEnabled));
-  }, [voiceEnabled]);
-
-  useEffect(() => {
-    localStorage.setItem("luffy-voice-speed", String(voiceSpeed));
-  }, [voiceSpeed]);
-
-  useEffect(() => {
-    localStorage.setItem("luffy-voice-pitch", String(voicePitch));
-  }, [voicePitch]);
-
-  useEffect(() => {
-    localStorage.setItem("luffy-enter-send", String(enterToSend));
-  }, [enterToSend]);
-
-  useEffect(() => {
-    localStorage.setItem("luffy-lang", language);
-  }, [language]);
+    localStorage.setItem("luffy-density", density);
+    document.documentElement.setAttribute("data-density", density);
+  }, [density]);
 
   if (!open) return null;
+
+  const handleTheme = (id: ThemeId) => {
+    setActiveTheme(id);
+    applyTheme(id);
+  };
 
   const previewVoice = () => {
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance("Luffy AI at your service. How can I assist you, Sir?");
+    const u = new SpeechSynthesisUtterance(
+      "Luffy AI at your service. How can I assist you, Sir?"
+    );
     const voices = window.speechSynthesis.getVoices();
     const preferred =
       voices.find((v) => v.name === "Google UK English Male") ||
       voices.find((v) => v.lang.startsWith("en") && v.name.toLowerCase().includes("male")) ||
       voices[0];
     if (preferred) u.voice = preferred;
-    u.rate = voiceSpeed;
+    u.rate  = voiceSpeed;
     u.pitch = voicePitch;
     window.speechSynthesis.speak(u);
   };
@@ -77,7 +83,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       onClick={onClose}
     >
       <div
-        className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-[580px] overflow-hidden"
+        className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -92,40 +98,38 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           </button>
         </div>
 
-        <div className="flex" style={{ minHeight: 360 }}>
-          {/* Sidebar tabs */}
+        <div className="flex" style={{ minHeight: 380 }}>
+          {/* Tab sidebar */}
           <div className="w-40 border-r border-border px-2 py-3 space-y-0.5 shrink-0">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  data-testid={`settings-tab-${tab.id}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left",
-                    activeTab === tab.id
-                      ? "bg-accent text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  )}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {tab.label}
-                </button>
-              );
-            })}
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                data-testid={`settings-tab-${id}`}
+                onClick={() => setActiveTab(id)}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors text-left",
+                  activeTab === id
+                    ? "bg-accent text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                )}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* Content */}
+          {/* Panel */}
           <div className="flex-1 px-6 py-5 overflow-y-auto">
-            {/* General */}
+
+            {/* ── General ── */}
             {activeTab === "general" && (
               <div className="space-y-5">
                 <h3 className="text-sm font-semibold text-foreground">General Settings</h3>
 
                 <SettingRow
                   label="Press Enter to Send"
-                  description="Send message on Enter. Use Shift+Enter for new line."
+                  description="Send on Enter. Shift+Enter inserts a new line."
                   icon={<Keyboard className="w-4 h-4" />}
                 >
                   <Toggle value={enterToSend} onChange={setEnterToSend} />
@@ -133,7 +137,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
 
                 <SettingRow
                   label="Input Language"
-                  description="Language used for voice input recognition."
+                  description="Language for voice input recognition."
                   icon={<Mic className="w-4 h-4" />}
                 >
                   <select
@@ -148,24 +152,25 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </select>
                 </SettingRow>
 
-                <div className="rounded-xl bg-muted/30 border border-border p-4 text-[12px] text-muted-foreground space-y-1">
+                <div className="rounded-xl bg-muted/30 border border-border p-4 text-[12px] text-muted-foreground space-y-1.5">
                   <p className="font-medium text-foreground text-xs mb-2">Quick Tips</p>
-                  <p>• Click any feature card on home screen to start a guided prompt</p>
+                  <p>• Click any feature card on the home screen to start a guided prompt</p>
                   <p>• Use the microphone icon to speak your question</p>
                   <p>• Voice output reads Luffy AI's responses aloud</p>
                   <p>• Paste code directly and ask Luffy to debug it</p>
+                  <p>• Type "panic" or "exam tomorrow" to activate Panic Mode ⚡</p>
                 </div>
               </div>
             )}
 
-            {/* Voice */}
+            {/* ── Voice ── */}
             {activeTab === "voice" && (
               <div className="space-y-5">
                 <h3 className="text-sm font-semibold text-foreground">Voice Settings</h3>
 
                 <SettingRow
                   label="Voice Output"
-                  description="Luffy AI reads responses aloud using text-to-speech."
+                  description="Luffy AI reads responses aloud."
                   icon={<Volume2 className="w-4 h-4" />}
                 >
                   <Toggle value={voiceEnabled} onChange={setVoiceEnabled} />
@@ -175,16 +180,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <div>
                     <div className="flex justify-between mb-2">
                       <label className="text-xs font-medium text-foreground">Speech Speed</label>
-                      <span className="text-xs text-muted-foreground">{voiceSpeed.toFixed(2)}x</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{voiceSpeed.toFixed(2)}×</span>
                     </div>
                     <input
-                      type="range"
-                      min="0.5"
-                      max="2"
-                      step="0.05"
+                      type="range" min="0.5" max="2" step="0.05"
                       value={voiceSpeed}
                       onChange={(e) => setVoiceSpeed(parseFloat(e.target.value))}
-                      className="w-full accent-cyan-400 h-1.5 rounded-full"
+                      className="w-full accent-cyan-400 h-1.5 rounded-full cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                       <span>Slow</span><span>Normal</span><span>Fast</span>
@@ -194,16 +196,13 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <div>
                     <div className="flex justify-between mb-2">
                       <label className="text-xs font-medium text-foreground">Voice Pitch</label>
-                      <span className="text-xs text-muted-foreground">{voicePitch.toFixed(2)}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{voicePitch.toFixed(2)}</span>
                     </div>
                     <input
-                      type="range"
-                      min="0.5"
-                      max="2"
-                      step="0.05"
+                      type="range" min="0.5" max="2" step="0.05"
                       value={voicePitch}
                       onChange={(e) => setVoicePitch(parseFloat(e.target.value))}
-                      className="w-full accent-cyan-400 h-1.5 rounded-full"
+                      className="w-full accent-cyan-400 h-1.5 rounded-full cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                       <span>Deep</span><span>Normal</span><span>High</span>
@@ -213,7 +212,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   <button
                     onClick={previewVoice}
                     data-testid="button-preview-voice"
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-sm hover:bg-primary/20 transition-colors"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-sm font-medium hover:bg-primary/20 active:scale-[0.98] transition-all"
                   >
                     <Volume2 className="w-4 h-4" />
                     Preview Voice
@@ -222,51 +221,92 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* Appearance */}
+            {/* ── Appearance ── */}
             {activeTab === "appearance" && (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 <h3 className="text-sm font-semibold text-foreground">Appearance</h3>
 
-                <div className="space-y-2">
+                {/* Theme picker */}
+                <div className="space-y-2.5">
                   <label className="text-xs font-medium text-foreground">Theme</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { name: "Default Dark", colors: ["#0f172a", "#1e293b", "#22d3ee"] },
-                      { name: "Midnight", colors: ["#09090b", "#18181b", "#a78bfa"] },
-                    ].map((theme) => (
-                      <button
-                        key={theme.name}
-                        className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background/50 hover:border-primary/40 transition-colors text-left group"
-                      >
-                        <div className="flex gap-1">
-                          {theme.colors.map((c, i) => (
-                            <div key={i} className="w-4 h-4 rounded-full" style={{ background: c }} />
-                          ))}
-                        </div>
-                        <span className="text-xs text-muted-foreground group-hover:text-foreground">{theme.name}</span>
-                      </button>
-                    ))}
+                    {THEMES.map((theme) => {
+                      const isActive = activeTheme === theme.id;
+                      return (
+                        <button
+                          key={theme.id}
+                          onClick={() => handleTheme(theme.id)}
+                          data-testid={`theme-${theme.id}`}
+                          className={cn(
+                            "relative flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-150",
+                            isActive
+                              ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30"
+                              : "border-border bg-background/50 hover:border-primary/30 hover:bg-accent/40"
+                          )}
+                        >
+                          {/* Colour swatches */}
+                          <div className="flex gap-1 shrink-0">
+                            {theme.swatches.map((c, i) => (
+                              <div
+                                key={i}
+                                className="w-4 h-4 rounded-full shadow-sm"
+                                style={{ background: c }}
+                              />
+                            ))}
+                          </div>
+                          <span
+                            className={cn(
+                              "text-xs font-medium",
+                              isActive ? "text-foreground" : "text-muted-foreground"
+                            )}
+                          >
+                            {theme.name}
+                          </span>
+                          {isActive && (
+                            <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1">More themes coming soon.</p>
                 </div>
 
-                <div className="space-y-2">
+                {/* Message density */}
+                <div className="space-y-2.5">
                   <label className="text-xs font-medium text-foreground">Message Density</label>
                   <div className="flex gap-2">
-                    {["Comfortable", "Compact"].map((d) => (
+                    {(
+                      [
+                        { value: "comfortable", label: "Comfortable", icon: AlignJustify },
+                        { value: "compact",     label: "Compact",     icon: AlignLeft },
+                      ] as const
+                    ).map(({ value, label, icon: Icon }) => (
                       <button
-                        key={d}
-                        className="px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors first:bg-accent first:text-foreground first:border-primary/30"
+                        key={value}
+                        onClick={() => setDensity(value)}
+                        data-testid={`density-${value}`}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all",
+                          density === value
+                            ? "bg-primary/10 border-primary/40 text-primary"
+                            : "border-border text-muted-foreground hover:text-foreground hover:border-primary/20 hover:bg-accent/40"
+                        )}
                       >
-                        {d}
+                        <Icon className="w-3.5 h-3.5" />
+                        {label}
                       </button>
                     ))}
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Compact reduces padding between messages for more content on screen.
+                  </p>
                 </div>
               </div>
             )}
 
-            {/* About */}
+            {/* ── About ── */}
             {activeTab === "about" && (
               <div className="space-y-5">
                 <div className="flex items-center gap-3">
@@ -279,10 +319,10 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </div>
                 </div>
 
-                <div className="space-y-3 text-xs text-muted-foreground">
-                  <InfoRow label="Powered by" value="Google Gemini 2.5 Flash" />
-                  <InfoRow label="Voice Engine" value="Web Speech API" />
-                  <InfoRow label="Designed for" value="BCA Students" />
+                <div className="space-y-0 text-xs text-muted-foreground">
+                  <InfoRow label="Powered by"       value="Google Gemini 2.5 Flash" />
+                  <InfoRow label="Voice Engine"     value="Web Speech API" />
+                  <InfoRow label="Designed for"     value="BCA Students" />
                   <InfoRow label="Language Support" value="Java, C++, Python, Web Dev" />
                 </div>
 
@@ -294,7 +334,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                   </p>
                 </div>
 
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Luffy AI uses Replit AI Integrations for Gemini access. AI responses may not always be accurate — verify critical information.
                 </p>
               </div>
@@ -306,7 +346,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         <div className="border-t border-border px-6 py-3 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all"
           >
             Done
           </button>
@@ -316,12 +356,16 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   );
 }
 
+/* ── Shared sub-components ── */
+
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       onClick={() => onChange(!value)}
+      role="switch"
+      aria-checked={value}
       className={cn(
-        "relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0",
+        "relative w-10 h-5 rounded-full transition-colors duration-200 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         value ? "bg-primary" : "bg-muted"
       )}
     >
@@ -336,10 +380,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
 }
 
 function SettingRow({
-  label,
-  description,
-  icon,
-  children,
+  label, description, icon, children,
 }: {
   label: string;
   description: string;
@@ -363,7 +404,7 @@ function SettingRow({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center py-2 border-b border-border/50">
-      <span className="text-muted-foreground">{label}</span>
+      <span>{label}</span>
       <span className="text-foreground font-medium">{value}</span>
     </div>
   );

@@ -185,6 +185,10 @@
   font-size: 0.8em;
 }
 
+/* Message density */
+[data-density="compact"] .msg-bubble { @apply py-2 px-3; }
+[data-density="compact"] .msg-animate { margin-bottom: 0.25rem; }
+
 /* Feature card hover glow */
 .feature-card:hover {
   box-shadow: 0 0 0 1px hsl(199 89% 48% / 0.25), 0 8px 32px rgba(0,0,0,0.3);
