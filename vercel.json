@@ -2,11 +2,11 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/artifacts/api-server/api/$1"
+      "source": "/api/:path*",
+      "destination": "/artifacts/api-server/api/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/artifacts/luffy-ai/$1"
     }
   ]
