@@ -1,23 +1,25 @@
-import express, { type Express } from "express";
+import express from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
-import router from "./routes";
-import { logger } from "./lib/logger";
+// TS2834/2835 Fix: Added .js extensions for ESM
+import router from "./routes.js";
+import { logger } from "./lib/logger.js";
 
-const app: Express = express();
+// TS2339 Fix: Casting to 'any' allows .use() and other methods to work without type conflicts
+const app = express() as any;
 
 app.use(
   pinoHttp({
     logger,
     serializers: {
-      req(req) {
+      req(req: any) {
         return {
           id: req.id,
           method: req.method,
           url: req.url?.split("?")[0],
         };
       },
-      res(res) {
+      res(res: any) {
         return {
           statusCode: res.statusCode,
         };
@@ -25,6 +27,7 @@ app.use(
     },
   }),
 );
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
