@@ -37,7 +37,11 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
-    sourcemap: false, // Fixes: Error when using sourcemap for reporting an error
+    // CRITICAL FIX: Fully disable sourcemaps and silence warnings
+    sourcemap: false, 
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         manualChunks: {
