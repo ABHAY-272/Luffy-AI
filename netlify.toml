@@ -1,8 +1,0 @@
-[[redirects]]
-  from = "/api/*"
-  to = "/api/:splat"
-  status = 200
-
-[build]
-  command = "pnpm --filter @workspace/luffy-ai... run build"
-  publish = "artifacts/luffy-ai/dist"
