@@ -1,8 +1,14 @@
 {
   "version": 2,
+  "cleanUrls": true,
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "artifacts/api-server/**"
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "destination": "/api/index.js"
     },
     {
