@@ -2,23 +2,43 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 
-// Apne compiled backend ko import karo
-// Note: Build ke baad .ts files .js ban jati hain
-import { app } from '../artifacts/api-server/src/index.js'; 
-
+// Resolve directory names
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Frontend static files serve karne ke liye
-// Agar tumhara build folder 'dist' hai toh yahan 'dist' likho
-const frontendPath = path.join(__dirname, '../dist');
-app.use(express.static(frontendPath));
+// Dynamically import the app instance
+// Hum directly .ts use nahi kar sakte, aur compile ke baad location 
+// shayad 'dist' folder ke andar chali gayi ho.
+let app;
+try {
+  // Try 1: Original path with .js (Compiled location)
+  const backend = await import('../artifacts/api-server/src/index.js');
+  app = backend.app;
+} catch (e) {
+  try {
+    // Try 2: Alternative compiled location (Common in workspaces)
+    const backend = await import('../artifacts/api-server/dist/index.js');
+    app = backend.app;
+  } catch (err) {
+    console.error("Critical: Could not find api-server index file.");
+    process.exit(1);
+  }
+}
 
-// 404 Fix: Saari unknown requests ko frontend par bhej do
-app.get('*', (req, res) => {
+const server = express();
+const PORT = process.env.PORT || 10000;
+
+// Connect backend routes
+server.use('/api', app);
+
+// Serve Frontend
+const frontendPath = path.join(__dirname, '../dist');
+server.use(express.static(frontendPath));
+
+server.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-// Port handle karne ke liye (Ye sirf fallback hai, index.ts wala listen bhi chalega)
-const PORT = process.env.PORT || 3000;
-console.log(`🚀 Server initialized on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server finally live on port ${PORT}`);
+});
