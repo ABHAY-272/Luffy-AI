@@ -1,21 +1,24 @@
-// api/index.js (Rename it from .ts to .js)
-export default async function handler(req, res) {
-  try {
-    // Dynamic import to handle ESM/CommonJS bridge
-    const module = await import('../artifacts/api-server/src/index.js');
-    const app = module.app;
+import path from 'path';
+import { fileURLToPath } from 'url';
+import express from 'express';
 
-    if (!app) {
-      return res.status(500).json({ error: "Express app instance not found." });
-    }
+// Apne compiled backend ko import karo
+// Note: Build ke baad .ts files .js ban jati hain
+import { app } from '../artifacts/api-server/src/index.js'; 
 
-    // Standard Express handler for Vercel
-    return app(req, res);
-  } catch (error) {
-    console.error('Runtime Crash Log:', error);
-    return res.status(500).json({ 
-      error: 'Backend failed to load', 
-      message: error.message 
-    });
-  }
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Frontend static files serve karne ke liye
+// Agar tumhara build folder 'dist' hai toh yahan 'dist' likho
+const frontendPath = path.join(__dirname, '../dist');
+app.use(express.static(frontendPath));
+
+// 404 Fix: Saari unknown requests ko frontend par bhej do
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// Port handle karne ke liye (Ye sirf fallback hai, index.ts wala listen bhi chalega)
+const PORT = process.env.PORT || 3000;
+console.log(`🚀 Server initialized on port ${PORT}`);
